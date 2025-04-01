@@ -1,0 +1,84 @@
+name: Run Reverse Linked List Tests
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the repository code
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # Needed to compare changes
+
+      # Get changed files in the push
+      - name: Get changed files
+        id: changed-files
+        run: |
+          echo "changed_files=$(git diff --name-only HEAD^ HEAD)" >> $GITHUB_OUTPUT
+
+      # Set up Python environment (if Python files changed)
+      - name: Set up Python
+        if: contains(steps.changed-files.outputs.changed_files, 'reverse_linked_list.py')
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      # Run Python tests
+      - name: Run Python Tests
+        if: contains(steps.changed-files.outputs.changed_files, 'reverse_linked_list.py')
+        run: |
+          cd ReverseLinkedList
+          python test_reverse_linked_list.py
+
+      # Set up Java environment (if Java files changed)
+      - name: Set up JDK
+        if: contains(steps.changed-files.outputs.changed_files, 'ReverseLinkedList.java')
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # Compile and run Java tests
+      - name: Run Java Tests
+        if: contains(steps.changed-files.outputs.changed_files, 'ReverseLinkedList.java')
+        run: |
+          cd ReverseLinkedList
+          javac *.java
+          java TestReverseLinkedList
+
+      # Set up GCC for C/C++ (if C or C++ files changed)
+      - name: Set up GCC
+        if: |
+          contains(steps.changed-files.outputs.changed_files, 'reverse_linked_list.c') ||
+          contains(steps.changed-files.outputs.changed_files, 'reverse_linked_list.cpp')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc g++
+
+      # Compile and run C tests
+      - name: Run C Tests
+        if: contains(steps.changed-files.outputs.changed_files, 'reverse_linked_list.c')
+        run: |
+          cd ReverseLinkedList
+          gcc test_reverse_linked_list.c reverse_linked_list.c -o test_c
+          ./test_c
+
+      # Compile and run C++ tests
+      - name: Run C++ Tests
+        if: contains(steps.changed-files.outputs.changed_files, 'reverse_linked_list.cpp')
+        run: |
+          cd ReverseLinkedList
+          g++ test_reverse_linked_list.cpp reverse_linked_list.cpp -o test_cpp
+          ./test_cpp
+
+      # Check test results (this step assumes tests exit with 0 on success)
+      - name: Verify Test Success
+        run: |
+          echo "Tests completed. Check the output above for results."
+          # GitHub Actions will fail the job if any previous command exits with a non-zero status
